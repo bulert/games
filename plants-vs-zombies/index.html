@@ -1,48 +1,145 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="robots" content="noindex, nofollow">
-        <style>
-            html, body {
-                margin: 0;
-                padding: 0;
-                height: 100%;
-                overflow: hidden;
-                background-color: #000;
-            }
-        </style>
-    </head>
-    <body>
-        <div id="container"></div>
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width,initial-scale=1" name="viewport">
+    <title>Plants vs Zombies</title>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
+</head>
+<body style="margin:0;height:100vh;display:flex;justify-content:center;align-items:center;background:#000;overflow:hidden;">
 
-        <script>
-            window.RufflePlayer = window.RufflePlayer || {};
-            window.RufflePlayer.config = {
-                "autoplay": "on",
-                "contextMenu": "off",
-                "unmuteOverlay": "hidden",
-                "letterbox": "on"
-            };
+    <progress id="progress-bar" value="0" max="100" style="width:300px;"></progress>
 
-            document.addEventListener("DOMContentLoaded", function () {
-                const swf = './game.swf';
-                const ruffle = window.RufflePlayer.newest();
-                const player = ruffle.createPlayer();
+    <div id="canvas-container" style="display:none;width:100vw;height:100vh;">
+        <canvas id="canvas" tabindex="0" width="800" height="600" style="display:block;margin:auto;outline:none;"></canvas>
+    </div>
+
+    <div style="display:none">
+        <div id="upload-screen"></div>
+        <div id="drop-zone">
+            <div id="file-list"></div>
+            <div id="drop-zone-reselect"><a></a></div>
+            <div id="loading-drop-zone"></div>
+        </div>
+        <input id="file-input" type="file">
+        <input id="resource-zip-input" type="file">
+        <button id="browse-zip-btn"></button>
+        <button id="browse-folder-btn"></button>
+        <button id="save-export-btn"></button>
+        <button id="upload-save-import-btn"></button>
+        <button id="upload-save-import-dir-btn"></button>
+        <button id="upload-save-clear-btn"></button>
+        <input id="upload-save-import-input">
+        <input id="upload-save-import-dir-input">
+        <textarea id="pvz-soft-keyboard"></textarea>
+    </div>
+
+<script>
+    window.moduleReadyPromise = new Promise((n, e) => { 
+        window._resolveModuleReady = n; 
+        window._rejectModuleReady = e; 
+    });
+    
+
+    var Module = {
+        canvas: document.getElementById("canvas"),
+        noInitialRun: true,
+        onRuntimeInitialized: () => window._resolveModuleReady(),
+        onAbort: (n) => window._rejectModuleReady(new Error(n)),
+        print: (n) => console.log(n),
+        printErr: (n) => console.warn(n)
+    };
+</script>
+
+<script src="pvz-portable.js" async></script>
+
+<script>
+        window.moduleReadyPromise = new Promise((n, e) => { 
+            window._resolveModuleReady = n; 
+            window._rejectModuleReady = e; 
+        });
+
+        var Module = {
+            canvas: document.getElementById("canvas"),
+            noInitialRun: true,
+            onRuntimeInitialized: () => window._resolveModuleReady(),
+            onAbort: (n) => window._rejectModuleReady(new Error(n)),
+            print: (n) => console.log(n),
+            printErr: (n) => console.warn(n)
+        };
+    </script>
+
+    <script src="pvz-portable.js" async></script>
+
+    <script>
+        "use strict";
+        const bar = document.getElementById("progress-bar");
+
+
+        const propertyFiles = [
+            "properties/default.xml",
+            "properties/Layout.xml",
+            "properties/partner_logo.jpg",
+            "properties/partner.xml",
+            "properties/partner.xml.sig"
+        ];
+
+        async function init() {
+            try {
+
+                await window.moduleReadyPromise;
+
+
+                bar.value = 10;
+                const pakRes = await fetch('main.pak');
+                if (!pakRes.ok) throw new Error("main.pak not found on server");
+                const pakData = new Uint8Array(await pakRes.arrayBuffer());
+                Module.FS.writeFile("/main.pak", pakData);
+
+
+                try { Module.FS.mkdir("/properties"); } catch(e) {}
+
+
+                for (let i = 0; i < propertyFiles.length; i++) {
+                    const filePath = propertyFiles[i];
+                    const res = await fetch(filePath);
+                    if (res.ok) {
+                        const data = new Uint8Array(await res.arrayBuffer());
+                        Module.FS.writeFile("/" + filePath, data);
+                    } else {
+                        console.warn("Could not load: " + filePath);
+                    }
+
+                    bar.value = 20 + ((i / propertyFiles.length) * 70);
+                }
+
+
+                try {
+                    Module.FS.mkdir("/saves");
+                    Module.FS.mount(Module.FS.filesystems.IDBFS, {}, "/saves");
+                    await new Promise(r => Module.FS.syncfs(true, r));
+                } catch(e) {}
+
+                bar.style.display = "none";
+                document.getElementById("canvas-container").style.display = "flex";
                 
-                const container = document.getElementById("container");
-                container.appendChild(player);
+                const resize = () => {
+                    const c = document.getElementById("canvas");
+                    const s = Math.min(window.innerWidth / c.width, window.innerHeight / c.height);
+                    c.style.width = Math.floor(c.width * s) + "px";
+                    c.style.height = Math.floor(c.height * s) + "px";
+                };
+                window.addEventListener("resize", resize);
+                resize();
+                
+                Module.callMain([]);
+            } catch (e) {
+                console.error(e);
+                alert("Error loading game: " + e.message);
+            }
+        }
 
-                player.style.width = "100vw";
-                player.style.height = "100vh";
-
-                player.load({
-                    url: swf
-                }).catch((e) => {
-                    console.error("Ruffle failed to load:", e);
-                });
-            });
-        </script>
-        <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
-    </body>
+        window.onload = init;
+    </script>
+</body>
 </html>
