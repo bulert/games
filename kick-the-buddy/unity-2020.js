@@ -267,7 +267,7 @@
     if (!document.getElementById("unity-clean-style")) {
       const style = document.createElement("style");
       style.id = "unity-clean-style";
-      style.textContent = "html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#111;}#game-container{position:fixed;inset:0;}#game{width:100%;height:100%;display:block;}#unity-clean-loader{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(340px,85vw);font:14px Arial,sans-serif;color:#fff;z-index:10;text-align:center}#unity-clean-progress{margin-top:10px;width:100%;height:8px;background:#333;border-radius:999px;overflow:hidden}#unity-clean-fill{width:0%;height:100%;background:#25d366;transition:width .15s linear}";
+      style.textContent = "html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000;}#game-container{position:fixed;inset:0;}#game{width:100%;height:100%;display:block;}#unity-clean-loader{display:none;}";
       document.head.appendChild(style);
     }
 
@@ -307,7 +307,7 @@
       layout.fill.style.width = `${Math.round(clamped * 100)}%`;
     }
     if (layout.label) {
-      layout.label.textContent = `Loading game... ${Math.round(clamped * 100)}%`;
+      layout.label.textContent = ` ${Math.round(clamped * 100)}%`;
     }
     try {
       window.PokiSDK.gameLoadingProgress({ percentageDone: clamped });
